@@ -1,0 +1,6 @@
+isbn,title,instock,sold,value
+01,The Beginner's Guide,8,2,100.00
+02,An Introduction To Python,10,0,150.00
+03,An Introduction To Statefun,5,0,1000.00
+04,Here We Go,5,0,1500.00
+05,Out Of The Box,2,0,750.00
