@@ -23,7 +23,7 @@ module:
             kind: http
           spec:
             functions: com.store.fn/*
-            urlPathTemplate: http://192.168.1.9:8000/statefun
+            urlPathTemplate: http://store:8000/statefun
             timeouts:
               call: 2 min
       - endpoint:
@@ -31,7 +31,7 @@ module:
             kind: http
           spec:
             functions: com.warehouse.fn/*
-            urlPathTemplate: http://192.168.1.9:8001/statefun
+            urlPathTemplate: http://warehouse:8001/statefun
             timeouts:
               call: 2 min
     ingresses:
