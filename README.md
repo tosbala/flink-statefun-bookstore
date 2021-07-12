@@ -13,7 +13,7 @@ docker-compose up
 ```
 
 Sample producer makes random orders for books in `stock.csv`.
-Order status are posted to kafka topic called `status`. Run the following in a separate terminal to observe the order status
+Order updates are posted to kafka topic called `status`. Run the following in a separate terminal to observe the order status
 
 ```
 docker-compose exec kafka kafka-console-consumer \
