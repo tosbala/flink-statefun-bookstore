@@ -12,7 +12,7 @@ docker-compose build
 docker-compose up
 ```
 
-Sample producer makes random orders for books in `stock.csv`.
+Sample producer makes random orders for books in `warehouse\stock.csv`.
 Order updates are posted to kafka topic called `status`. Run the following in a separate terminal to observe the order status
 
 ```
