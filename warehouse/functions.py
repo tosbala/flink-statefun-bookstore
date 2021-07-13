@@ -18,8 +18,9 @@
 import os
 import sys
 from datetime import timedelta
-
 import asyncio
+
+from statefun import *
 
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
@@ -30,6 +31,7 @@ from models import *
 import serve
 
 
+# uses isbn as target id
 @serve.functions.bind(
     typename="com.warehouse.fn/order", 
     specs=[
@@ -42,7 +44,7 @@ async def process_order(context: Context, message: Message):
     # confirm reservation once payment is done
     order = message.as_type(Order.TYPE)
 
-    print(f"Received an order for {context.address.id} in state '{Status(order.status).name}'", flush=True)
+    print(f"Received an order for {context.address.id} in state '{OrderStatus(order.status).name}'", flush=True)
 
     reservations = context.storage.reservations or list()
     
@@ -52,25 +54,25 @@ async def process_order(context: Context, message: Message):
 
     print(f'in stock {context.storage.instock}', flush=True)
 
-    if order.status == Status.RESERVE:
-        order.status = Status.NOSTOCK
+    if order.status == OrderStatus.RESERVE:
+        order.status = OrderStatus.NOSTOCK
         if context.storage.instock > len(reservations):
             if order.buyer not in reservations:
                 reservations.append(order.buyer)
-            order.status = Status.RESERVED
+            order.status = OrderStatus.RESERVED
             order.value = inventory.get_value(order.isbn)
-    elif order.status == Status.PAID:
-        order.status = Status.NORESERVATION
+    elif order.status == OrderStatus.PAID:
+        order.status = OrderStatus.NORESERVATION
         if order.buyer in reservations:
             reservations.remove(order.buyer)
             context.storage.instock = inventory.mark_sold(order.isbn)
-            order.status = Status.CONFIRMED
+            order.status = OrderStatus.CONFIRMED
     else:
-        order.status = Status.FAILED
+        order.status = OrderStatus.FAILED
 
     context.storage.reservations = reservations
     print(f'current reservations for {context.address.id}: {context.storage.reservations}', flush=True)
-    print(f"order for {context.address.id} is moved to state '{Status(order.status).name}'", flush=True)
+    print(f"order for {context.address.id} is moved to state '{OrderStatus(order.status).name.upper()}'", flush=True)
 
     # update the order status
     context.send(
@@ -78,6 +80,15 @@ async def process_order(context: Context, message: Message):
                         target_id=context.address.id,
                         value=order,
                         value_type=Order.TYPE))
+
+    if order.status == OrderStatus.CONFIRMED:
+        # send out a dispatch request
+        context.send(
+            message_builder(
+                target_typename="com.warehouse.fn/dispatch",
+                target_id=context.address.id,
+                value=order,
+                value_type=Order.TYPE))
 
     # stock up books
     if context.storage.instock < 1:
@@ -101,7 +112,7 @@ async def stock_up(context: Context, message: Message):
 @serve.functions.bind(typename="com.warehouse.fn/dispatch")
 async def dispatch_order(context: Context, message: Message):
     order = message.as_type(Order.TYPE)
-    order.status = Status.DISPATCHED
+    order.status = OrderStatus.DISPATCHED
 
     # lets take sometime to dispatch
     await asyncio.sleep(1)

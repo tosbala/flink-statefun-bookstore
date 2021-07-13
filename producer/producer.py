@@ -30,7 +30,7 @@ def place_orders(book_list, no_of_orders):
         value = json.dumps(order.__dict__).encode()
         producer.send(topic='orders', key=selection.encode(), value=json.dumps(order.__dict__).encode())
         
-        print(f"placed the order for book '{book_list[selection]}'", flush=True)
+        print(f"placed the order for book '{selection}: {book_list[selection]}'", flush=True)
 
         sleep(10)
 

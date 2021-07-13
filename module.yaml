@@ -34,6 +34,14 @@ module:
             urlPathTemplate: http://warehouse:8001/statefun
             timeouts:
               call: 2 min
+      - endpoint:
+          meta:
+            kind: http
+          spec:
+            functions: com.payments.fn/*
+            urlPathTemplate: http://payments:8002/statefun
+            timeouts:
+              call: 2 min
     ingresses:
       - ingress:
           meta:
@@ -48,10 +56,26 @@ module:
                 targets:
                   - com.store.fn/order
                   - com.warehouse.fn/order
+              - topic: payment-updates
+                valueType: com.bookstore.types/Payment
+                targets:
+                  - com.store.fn/order-updates
+      - ingress:
+          meta:
+            type: io.statefun.kafka/ingress
+            id: com.payments/orders
+          spec:
+            address: kafka:9092
+            consumerGroupId: payment-gateways
+            topics:
+              - topic: payments
+                valueType: com.bookstore.types/Payment
+                targets:
+                  - com.payments.fn/process
       # - ingress:
       #     meta:
       #       type: io.statefun.kafka/ingress
-      #       id: com.warehouse.ingress/orders
+      #       id: com.payments/test
       #     spec:
       #       address: kafka:9092
       #       consumerGroupId: warehouses
@@ -59,12 +83,32 @@ module:
       #         - topic: orders
       #           valueType: com.bookstore.types/order
       #           targets:
-      #             - com.warehouse.fn/order
+      #             - com.store.fn/test
     egresses:
       - egress:
           meta:
             type: io.statefun.kafka/egress
             id: com.bookstore/coms
+          spec:
+            address: kafka:9092
+            deliverySemantic:
+              type: exactly-once
+              transactionTimeoutMillis: 100000
+      # egress to payments services
+      - egress:
+          meta:
+            type: io.statefun.kafka/egress
+            id: com.payments/orders
+          spec:
+            address: kafka:9092
+            deliverySemantic:
+              type: exactly-once
+              transactionTimeoutMillis: 100000
+      # egress that connects itself to one of the ingress
+      - egress:
+          meta:
+            type: io.statefun.kafka/egress
+            id: com.bookstore.ingress/orders
           spec:
             address: kafka:9092
             deliverySemantic:
